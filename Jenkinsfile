@@ -1,7 +1,6 @@
  pipeline {
-    agent any {
+    agent any 
      
-
     stages {
       stage('fetch_latest_code') {
         steps {
@@ -31,4 +30,4 @@
       }
     } 
     }
-  }
+ 
