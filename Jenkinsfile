@@ -1,31 +1,33 @@
-def tomcatIp = '18.193.82.159'
-def tomcatUser = 'ec2-user'
-pipeline{
-  agent any
-	 triggers { pollSCM('H */4 * * 1-5') }
-	
-stages{
-	stage('SCM Checkout'){
-	   steps{
-		   checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/piyalondhe/test12.git']]])    
-   }
-   }
-   stage('Maven Building'){
-	   steps{
-		sh "mvn clean package"
-	   }
-	   	
-   }
-   
-   stage('Deploying to container'){
-	   
-	   steps{
-	   sshagent(['tomcat-deployer'])  {
-    sh "scp -o StrictHostKeyChecking=no  /var/lib/jenkins/workspace/pipeline-demo/target/web-project.war ${tomcatUser}@${tomcatIp}:/home/ec2-user/apache-tomcat-9.0.54/webapps/"
-		}
-      
-   }
-   }
-		
-}
+node{
+    def buildNumber = BUILD_NUMBER
+    stage("Git CheckOut"){
+        git url: 'https://github.com/piyalondhe/pipeline.git',branch: 'main'
+    }
+    
+    stage(" Maven Clean Package"){
+      sh "mvn clean package"
+    } 
+    
+    stage("Build Dokcer Image") {
+         sh "docker build -t piya29/my-webapp:${buildNumber} ."
+    }
+    
+    stage("Docker Push"){
+        withCredentials([string(credentialsId: 'docker-account', variable: 'Docker_Hub_Pwd')]) {
+          sh "docker login -u piya29 -p ${Docker_Hub_Pwd}"
+        }
+        sh "docker push piya29/my-webapp:${buildNumber}"
+        
+    }
+    
+    // Remove local image in Jenkins Server
+    stage("Remove Local Image"){
+        sh "docker rmi -f  piya29/my-webapp:${buildNumber}"
+    }
+    
+    stage("Deploy to docker swarm cluster"){
+        sshagent(['Docker_Swarm_Manager_Dev']) {
+            sh "ssh ec2-user@3.94.103.214 docker service create --name javawebapp -p 8080:8080 --replicas 2 piya29/my-webapp:${buildNumber}"
+        }
+    }
 }
