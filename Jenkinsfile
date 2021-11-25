@@ -1,14 +1,11 @@
  pipeline {
-    agent {
-      node {
-        label "master"
-      } 
-    }
+    agent any {
+     
 
     stages {
       stage('fetch_latest_code') {
         steps {
-          git url: 'https://github.com/piyalondhe/pipeline.git' ,branch: 'main'
+          git url: 'https://github.com/piyalondhe/pipeline.git', branch: 'main'
         }
       }
 
@@ -33,4 +30,5 @@
         }
       }
     } 
+    }
   }
