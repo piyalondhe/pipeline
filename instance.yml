@@ -1,0 +1,28 @@
+- name: integration of terraform and ansible
+  hosts: all
+
+  tasks:
+  - name: installing httpd
+    package:
+         name: httpd
+         state: present
+  - name: installing php
+    package:
+         name: php
+         state: present
+  - name: starting httpd service
+    service:
+         name: httpd
+         state: started
+  - name: installing git
+    package:
+         name: git
+         state: present
+
+  - name: making folder
+    file:
+         path: /var/www/html
+         state: directory
+
+  - name: deploying webpage
+    copy: src=/home/ec2-user/index.html dest=/var/www/html
